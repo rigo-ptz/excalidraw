@@ -174,6 +174,45 @@ export type ExcalidrawFrameLikeElement =
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement;
 
+/** Extensible cell content, just text for now. v2: images/embeds */
+export type TableCellContent = {
+  readonly type: "text";
+  readonly text: string;
+  readonly fontSize?: number;
+  readonly fontFamily?: FontFamilyValues;
+  readonly textAlign?: TextAlign;
+  readonly bold?: boolean;
+  readonly italic?: boolean;
+};
+
+export type TableCell = Readonly<{
+  /** Cell content (extensible discriminated union) */
+  content: TableCellContent;
+  /** Per-cell background (null = transparent/inherit) */
+  backgroundColor: string | null;
+  /** Number of columns this cell spans (≥1, default 1) */
+  colspan: number;
+  /** Number of rows this cell spans (≥1, default 1) */
+  rowspan: number;
+  /** True if this cell is "shadowed" by a merged cell's span */
+  merged: boolean;
+  /** For merged shadow cells: coordinates of the merge-origin cell */
+  mergeOrigin: { row: number; col: number } | null;
+}>;
+
+export type ExcalidrawTableElement = _ExcalidrawElementBase &
+  Readonly<{
+    type: "table";
+    /** Column widths in px (length = number of columns) */
+    columns: readonly number[];
+    /** Row heights in px (length = number of rows) */
+    rows: readonly number[];
+    /** 2D cell grid, row-major: cells[rowIndex][colIndex] */
+    cells: readonly (readonly TableCell[])[];
+  }>;
+
+// ---------------------------------------------------------------------------
+
 /**
  * These are elements that don't have any additional properties.
  */
@@ -196,7 +235,8 @@ export type ExcalidrawRectanguloidElement =
   | ExcalidrawIframeLikeElement
   | ExcalidrawFrameLikeElement
   | ExcalidrawEmbeddableElement
-  | ExcalidrawSelectionElement;
+  | ExcalidrawSelectionElement
+  | ExcalidrawTableElement;
 
 /**
  * ExcalidrawElement should be JSON serializable and (eventually) contain
@@ -213,7 +253,8 @@ export type ExcalidrawElement =
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement
   | ExcalidrawIframeElement
-  | ExcalidrawEmbeddableElement;
+  | ExcalidrawEmbeddableElement
+  | ExcalidrawTableElement;
 
 export type ExcalidrawNonSelectionElement = Exclude<
   ExcalidrawElement,
@@ -265,7 +306,8 @@ export type ExcalidrawBindableElement =
   | ExcalidrawIframeElement
   | ExcalidrawEmbeddableElement
   | ExcalidrawFrameElement
-  | ExcalidrawMagicFrameElement;
+  | ExcalidrawMagicFrameElement
+  | ExcalidrawTableElement;
 
 export type ExcalidrawTextContainer =
   | ExcalidrawRectangleElement

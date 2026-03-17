@@ -29,6 +29,7 @@ import type {
   ExcalidrawLineElement,
   ExcalidrawFlowchartNodeElement,
   ExcalidrawLinearElementSubType,
+  ExcalidrawTableElement,
 } from "./types";
 
 export const isInitializedImageElement = (
@@ -47,6 +48,12 @@ export const isEmbeddableElement = (
   element: ExcalidrawElement | null | undefined,
 ): element is ExcalidrawEmbeddableElement => {
   return !!element && element.type === "embeddable";
+};
+
+export const isTableElement = (
+  element: ExcalidrawElement | null | undefined,
+): element is ExcalidrawTableElement => {
+  return !!element && element.type === "table";
 };
 
 export const isIframeElement = (
@@ -189,6 +196,7 @@ export const isBindableElement = (
       element.type === "embeddable" ||
       element.type === "frame" ||
       element.type === "magicframe" ||
+      element.type === "table" ||
       (element.type === "text" && !element.containerId))
   );
 };
@@ -205,6 +213,7 @@ export const isRectanguloidElement = (
       element.type === "embeddable" ||
       element.type === "frame" ||
       element.type === "magicframe" ||
+      element.type === "table" ||
       (element.type === "text" && !element.containerId))
   );
 };
@@ -261,7 +270,8 @@ export const isExcalidrawElement = (
     case "frame":
     case "magicframe":
     case "image":
-    case "selection": {
+    case "selection":
+    case "table": {
       return true;
     }
     default: {
