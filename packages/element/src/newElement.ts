@@ -48,6 +48,8 @@ import type {
   ExcalidrawArrowElement,
   ExcalidrawElbowArrowElement,
   ExcalidrawLineElement,
+  ExcalidrawTableElement,
+  TableCell,
 } from "./types";
 
 export type ElementConstructorOpts = MarkOptional<
@@ -542,5 +544,57 @@ export const newImageElement = (
     fileId: opts.fileId ?? null,
     scale: opts.scale ?? [1, 1],
     crop: opts.crop ?? null,
+  };
+};
+
+const DEFAULT_TABLE_CELL_WIDTH = 120;
+const DEFAULT_TABLE_CELL_HEIGHT = 40;
+
+const createEmptyCell = (): TableCell => ({
+  content: { type: "text", text: "" },
+  backgroundColor: null,
+  colspan: 1,
+  rowspan: 1,
+  merged: false,
+  mergeOrigin: null,
+});
+
+export const newTableElement = (
+  opts: {
+    type: "table";
+    cols: number;
+    rows: number;
+  } & ElementConstructorOpts,
+): NonDeleted<ExcalidrawTableElement> => {
+  const numCols = Math.max(1, opts.cols);
+  const numRows = Math.max(1, opts.rows);
+
+  const width = opts.width || numCols * DEFAULT_TABLE_CELL_WIDTH;
+  const height = opts.height || numRows * DEFAULT_TABLE_CELL_HEIGHT;
+
+  const colWidth = width / numCols;
+  const rowHeight = height / numRows;
+
+  const columns: readonly number[] = Array.from<number>({
+    length: numCols,
+  }).fill(colWidth);
+  const rowHeights: readonly number[] = Array.from<number>({
+    length: numRows,
+  }).fill(rowHeight);
+
+  const cells: readonly (readonly TableCell[])[] = Array.from(
+    { length: numRows },
+    () => Array.from({ length: numCols }, createEmptyCell),
+  );
+
+  return {
+    ..._newElementBase<ExcalidrawTableElement>("table", {
+      ...opts,
+      width,
+      height,
+    }),
+    columns,
+    rows: rowHeights,
+    cells,
   };
 };
