@@ -69,7 +69,7 @@ type ExcalidrawTableElement = _ExcalidrawElementBase & Readonly<{
 
 **Goal**: Place a table on canvas from toolbar, see it rendered with roughjs grid lines.
 
-#### 1.1 Type system
+#### 1.1 Type system ✅
 | File | Change |
 |------|--------|
 | `packages/element/src/types.ts` | Add `TableCellContent`, `TableCell`, `ExcalidrawTableElement`; add to `ExcalidrawElement` union and `ExcalidrawRectanguloidElement` |
@@ -77,7 +77,7 @@ type ExcalidrawTableElement = _ExcalidrawElementBase & Readonly<{
 | `packages/element/src/typeChecks.ts` | Add `isTableElement()`; add `case "table"` to `isExcalidrawElement()` (uses `assertNever` — compile error if missing); update `isBindableElement()`, `isRectanguloidElement()` |
 | `packages/element/src/comparisons.ts` | Add `"table"` to `hasBackground()`, `hasStrokeColor()`, `hasStrokeWidth()`, `hasStrokeStyle()`; no change needed for `canChangeRoundness()`, `toolIsArrow()`, `canHaveArrowheads()` |
 
-#### 1.2 Element factory
+#### 1.2 Element factory ✅
 | File | Change |
 |------|--------|
 | `packages/element/src/newElement.ts` | Add `newTableElement({ rows, cols, x, y, width, height })` |
@@ -86,7 +86,7 @@ type ExcalidrawTableElement = _ExcalidrawElementBase & Readonly<{
 - Initializes `cells` grid: each cell `{ content: { type: "text", text: "" }, backgroundColor: null, colspan: 1, rowspan: 1, merged: false, mergeOrigin: null }`
 - Default cell size: **120×40px** (so a 3×4 table is 360×160)
 
-#### 1.3 Toolbar & grid-picker
+#### 1.3 Toolbar & grid-picker ✅
 | File | Change |
 |------|--------|
 | `packages/excalidraw/components/icons.tsx` | Add `TableIcon` SVG |

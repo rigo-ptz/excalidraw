@@ -339,6 +339,7 @@ export interface AppState {
     // indicates if the current tool is temporarily switched on from the selection tool
     fromSelection: boolean;
   } & ActiveTool;
+  pendingTableConfig: { rows: number; cols: number } | null;
   preferredSelectionTool: {
     type: "selection" | "lasso";
     initialized: boolean;

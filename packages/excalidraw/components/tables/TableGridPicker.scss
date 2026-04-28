@@ -1,0 +1,40 @@
+.TableGridPicker {
+  position: absolute;
+  z-index: 100;
+  background: var(--island-bg-color);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--default-border-color);
+
+  &__grid {
+    display: grid;
+    gap: 2px;
+  }
+
+  &__cell {
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    border: 1px solid var(--default-border-color);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.05s;
+
+    &--highlighted {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+  }
+
+  &__label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-primary-color);
+    margin-top: 6px;
+    user-select: none;
+    font-family: var(--ui-font);
+  }
+}
+

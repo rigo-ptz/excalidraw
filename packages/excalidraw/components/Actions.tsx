@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import { useRef, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 import { Popover } from "radix-ui";
 
 import {
@@ -63,6 +63,8 @@ import {
 import Stack from "./Stack";
 import { ToolButton } from "./ToolButton";
 import { ToolPopover } from "./ToolPopover";
+import { TableGridPicker } from "./tables/TableGridPicker";
+import { Popover as ExcalidrawPopover } from "./Popover";
 import { Tooltip } from "./Tooltip";
 import DropdownMenu from "./dropdownMenu/DropdownMenu";
 import { PropertiesPopover } from "./PropertiesPopover";
@@ -1138,6 +1140,20 @@ export const ShapesSwitcher = ({
             );
           }
 
+          if (value === "table") {
+            return (
+              <TableButton
+                key={value}
+                label={label}
+                fillable={fillable}
+                icon={icon}
+                activeTool={activeTool}
+                app={app}
+                setAppState={setAppState}
+              />
+            );
+          }
+
           return (
             <ToolButton
               className={clsx("Shape", { fillable })}
@@ -1180,6 +1196,7 @@ export const ShapesSwitcher = ({
           );
         },
       )}
+
       <div className="App-toolbar__divider" />
 
       <DropdownMenu open={isExtraToolsMenuOpen}>
@@ -1342,3 +1359,61 @@ export const ExitViewModeButton = ({
     {pencilIcon}
   </button>
 );
+
+const TableButton = ({
+  key,
+  label,
+  fillable,
+  icon,
+  activeTool,
+  setAppState,
+  app,
+}: {
+  key: string;
+  label: string;
+  fillable: boolean;
+  icon: ReactNode;
+  activeTool: UIAppState["activeTool"];
+  setAppState: React.Component<any, AppState>["setState"];
+  app: AppClassProperties;
+}) => {
+  const [isTableGridPickerOpen, setIsTableGridPickerOpen] = useState(false);
+  const tableButtonRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div key={key} ref={tableButtonRef} style={{ position: "relative" }}>
+      <ToolButton
+        className={clsx("Shape", { fillable })}
+        type="radio"
+        icon={icon}
+        checked={activeTool.type === "table" || isTableGridPickerOpen}
+        name="editor-current-shape"
+        title={capitalizeString(label)}
+        aria-label={capitalizeString(label)}
+        data-testid={`toolbar-${key}`}
+        onChange={() => {
+          if (app.state.activeTool.type !== key) {
+            trackEvent("toolbar", key, "ui");
+          }
+          setIsTableGridPickerOpen(!isTableGridPickerOpen);
+        }}
+      />
+      {isTableGridPickerOpen && (
+        <ExcalidrawPopover
+          onCloseRequest={() => setIsTableGridPickerOpen(false)}
+        >
+          <TableGridPicker
+            onSelect={(rows, cols) => {
+              setIsTableGridPickerOpen(false);
+              setAppState({
+                pendingTableConfig: { rows, cols },
+              });
+              app.setActiveTool({ type: "table" });
+            }}
+            onClose={() => setIsTableGridPickerOpen(false)}
+          />
+        </ExcalidrawPopover>
+      )}
+    </div>
+  );
+};

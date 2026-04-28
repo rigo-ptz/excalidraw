@@ -435,6 +435,18 @@ export const ImageIcon = createIcon(
   modifiedTablerIconProps,
 );
 
+// tabler-icons: table
+export const TableIcon = createIcon(
+  <g strokeWidth="1.25">
+    <rect x="3" y="3" width="14" height="14" rx="1" />
+    <line x1="3" y1="7" x2="17" y2="7" />
+    <line x1="3" y1="11" x2="17" y2="11" />
+    <line x1="7" y1="3" x2="7" y2="17" />
+    <line x1="12" y1="3" x2="12" y2="17" />
+  </g>,
+  modifiedTablerIconProps,
+);
+
 // tabler-icons: eraser
 export const EraserIcon = createIcon(
   <g strokeWidth="1.5">
