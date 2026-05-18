@@ -132,6 +132,7 @@ import {
   newElement,
   newImageElement,
   newLinearElement,
+  newTableElement,
   newTextElement,
   refreshTextDimensions,
   deepCopyElement,
@@ -498,6 +499,11 @@ import type { Action, ActionResult } from "../actions/types";
 
 const AppContext = React.createContext<AppClassProperties>(null!);
 const AppPropsContext = React.createContext<AppProps>(null!);
+
+const DEFAULT_PENDING_TABLE_CONFIG = {
+  rows: 2,
+  cols: 2,
+} as const;
 
 const editorInterfaceContextInitialValue: EditorInterface = {
   formFactor: "desktop",
@@ -7471,7 +7477,8 @@ class App extends React.Component<AppProps, AppState> {
       this.state.activeTool.type === "selection" ||
       this.state.activeTool.type === "lasso" ||
       this.state.activeTool.type === "text" ||
-      this.state.activeTool.type === "image";
+      this.state.activeTool.type === "image" ||
+      this.state.activeTool.type === "table";
 
     if (!allowOnPointerDown) {
       return;
@@ -7617,6 +7624,8 @@ class App extends React.Component<AppProps, AppState> {
         pointerDownState,
         this.state.activeTool.type,
       );
+    } else if (this.state.activeTool.type === "table") {
+      this.createTableElementOnPointerDown(pointerDownState);
     } else if (this.state.activeTool.type === "laser") {
       this.laserTrails.startPath(
         pointerDownState.lastCoords.x,
@@ -9127,6 +9136,51 @@ class App extends React.Component<AppProps, AppState> {
     this.setState({
       multiElement: null,
       newElement: frame,
+    });
+  };
+
+  private createTableElementOnPointerDown = (
+    pointerDownState: PointerDownState,
+  ): void => {
+    const [gridX, gridY] = getGridPoint(
+      pointerDownState.origin.x,
+      pointerDownState.origin.y,
+      this.lastPointerDownEvent?.[KEYS.CTRL_OR_CMD]
+        ? null
+        : this.getEffectiveGridSize(),
+    );
+
+    const topLayerFrame = this.getTopLayerFrameAtSceneCoords({
+      x: gridX,
+      y: gridY,
+    });
+
+    const tableConfig =
+      this.state.pendingTableConfig ?? DEFAULT_PENDING_TABLE_CONFIG;
+
+    const table = newTableElement({
+      type: "table",
+      x: gridX,
+      y: gridY,
+      cols: tableConfig.cols,
+      rows: tableConfig.rows,
+      strokeColor: this.state.currentItemStrokeColor,
+      backgroundColor: this.state.currentItemBackgroundColor,
+      fillStyle: this.state.currentItemFillStyle,
+      strokeWidth: this.state.currentItemStrokeWidth,
+      strokeStyle: this.state.currentItemStrokeStyle,
+      roughness: this.state.currentItemRoughness,
+      opacity: this.state.currentItemOpacity,
+      locked: false,
+      frameId: topLayerFrame?.id ?? null,
+    });
+
+    this.scene.insertElement(table);
+
+    this.setState({
+      multiElement: null,
+      newElement: table,
+      pendingTableConfig: null,
     });
   };
 
@@ -11923,6 +11977,26 @@ class App extends React.Component<AppProps, AppState> {
         originOffset: this.state.originSnapOffset,
         informMutation,
       });
+
+      if (newElement.type === "table") {
+        const columnCount = Math.max(1, newElement.columns.length);
+        const rowCount = Math.max(1, newElement.rows.length);
+
+        if (newElement.width > 0 && newElement.height > 0) {
+          this.scene.mutateElement(
+            newElement,
+            {
+              columns: Array.from<number>({ length: columnCount }).fill(
+                newElement.width / columnCount,
+              ),
+              rows: Array.from<number>({ length: rowCount }).fill(
+                newElement.height / rowCount,
+              ),
+            },
+            { informMutation, isDragging: false },
+          );
+        }
+      }
     }
 
     this.setState({

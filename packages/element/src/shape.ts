@@ -63,6 +63,12 @@ import {
   getElementAbsoluteCoords,
 } from "./bounds";
 import { shouldTestInside } from "./collision";
+import {
+  getTableBoundarySegments,
+  getTableHeight,
+  getTableOffsets,
+  getTableWidth,
+} from "./table.utils";
 
 import type {
   ExcalidrawElement,
@@ -255,6 +261,7 @@ export const generateRoughOptions = (
       }
       return options;
     }
+    case "table":
     case "arrow":
       return options;
     default: {
@@ -1003,6 +1010,39 @@ const _generateElementShape = (
       // `element.canvas` on rerenders
       return shape;
     }
+    case "table": {
+      const tableWidth = getTableWidth(element);
+      const tableHeight = getTableHeight(element);
+      const options = generateRoughOptions(element, false, isDarkMode);
+      const shapes: ElementShapes[typeof element.type] = [
+        generator.rectangle(0, 0, tableWidth, tableHeight, options),
+      ];
+
+      const columnOffsets = getTableOffsets(element.columns);
+      const rowOffsets = getTableOffsets(element.rows);
+
+      for (let index = 1; index < columnOffsets.length - 1; index += 1) {
+        const x = columnOffsets[index];
+        const segments = getTableBoundarySegments(element, "vertical", index);
+        for (const [start, end] of segments) {
+          if (end > start) {
+            shapes.push(generator.line(x, start, x, end, options));
+          }
+        }
+      }
+
+      for (let index = 1; index < rowOffsets.length - 1; index += 1) {
+        const y = rowOffsets[index];
+        const segments = getTableBoundarySegments(element, "horizontal", index);
+        for (const [start, end] of segments) {
+          if (end > start) {
+            shapes.push(generator.line(start, y, end, y, options));
+          }
+        }
+      }
+
+      return shapes;
+    }
     default: {
       assertNever(
         element,
@@ -1096,7 +1136,13 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
     case "iframe":
     case "text":
     case "selection":
-      return getPolygonShape(element);
+      return getPolygonShape(element as any);
+    case "table":
+      return getPolygonShape({
+        ...element,
+        width: getTableWidth(element),
+        height: getTableHeight(element),
+      } as any);
     case "arrow":
     case "line": {
       const roughShape = ShapeCache.generateElementShape(element, null)[0];

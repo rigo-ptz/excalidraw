@@ -102,7 +102,7 @@ type ExcalidrawTableElement = _ExcalidrawElementBase & Readonly<{
 - Click confirms → stores config in `appState.pendingTableConfig: { rows, cols }`
 - Cursor changes to crosshair; next click on canvas places the table
 
-#### 1.4 Creation flow
+#### 1.4 Creation flow ✅
 | File | Change |
 |------|--------|
 | `packages/excalidraw/components/App.tsx` | Add `createTableElementOnPointerDown()`; wire into `handleCanvasPointerDown` dispatch (around line 7630 — the `else if` chain that checks `activeTool.type`); add `else if (this.state.activeTool.type === "table")` branch before the generic fallthrough |
@@ -132,7 +132,7 @@ type ExcalidrawTableElement = _ExcalidrawElementBase & Readonly<{
 | `packages/element/src/bounds.ts` | Table bounds: `[x, y, x + sum(columns), y + sum(rows)]` |
 | `packages/element/src/collision.ts` | Point-in-table = point-in-bounding-rect |
 
-Add utility in `packages/element/src/tableUtils.ts` (**new file**):
+Add utility in `packages/element/src/table.utils.ts` (**new file**):
 ```ts
 /** Returns { row, col } for the cell at a given point, or null */
 getTableCellAtPoint(element: ExcalidrawTableElement, point: GlobalPoint): { row: number; col: number } | null
@@ -210,7 +210,7 @@ Methods:
 #### 2.5 Merge cells
 | File | Change |
 |------|--------|
-| `packages/element/src/tableUtils.ts` | `mergeCells()`, `unmergeCells()` |
+| `packages/element/src/table.utils.ts` | `mergeCells()`, `unmergeCells()` |
 | `packages/excalidraw/actions/actionTable.ts` | `actionTableMergeCells`, `actionTableUnmergeCells` |
 
 **`mergeCells(element, startRow, startCol, endRow, endCol)`**:
@@ -256,7 +256,7 @@ Buttons appear when pointer is within ~20px of the respective edge. The "+" butt
 #### 3.2 Add/insert row and column
 | File | Change |
 |------|--------|
-| `packages/element/src/tableUtils.ts` | `addTableRow()`, `addTableColumn()`, `insertTableRow()`, `insertTableColumn()` |
+| `packages/element/src/table.utils.ts` | `addTableRow()`, `addTableColumn()`, `insertTableRow()`, `insertTableColumn()` |
 
 - `addTableRow(element)`: append to `rows` array (height = last row height), append empty cells row to `cells`
 - `addTableColumn(element)`: append to `columns` array (width = last col width), append empty cell to each row
@@ -266,7 +266,7 @@ Buttons appear when pointer is within ~20px of the respective edge. The "+" butt
 #### 3.3 Delete row/column
 | File | Change |
 |------|--------|
-| `packages/element/src/tableUtils.ts` | `deleteTableRow()`, `deleteTableColumn()` |
+| `packages/element/src/table.utils.ts` | `deleteTableRow()`, `deleteTableColumn()` |
 
 - Guard: cannot delete if it would leave 0 rows or 0 columns
 - When deleting through a merged region: shrink the merge's rowspan/colspan; if it reduces to 1 → unmerge
@@ -345,7 +345,7 @@ Surface these in:
 | `packages/element/src/types.ts` | Modify | `TableCellContent`, `TableCell`, `ExcalidrawTableElement`, update unions |
 | `packages/element/src/typeChecks.ts` | Modify | `isTableElement()`, update guards |
 | `packages/element/src/newElement.ts` | Modify | `newTableElement()` factory |
-| `packages/element/src/tableUtils.ts` | **New** | Cell lookup, merge/unmerge, add/delete/reorder row/col |
+| `packages/element/src/table.utils.ts` | **New** | Cell lookup, merge/unmerge, add/delete/reorder row/col |
 | `packages/element/src/tableEditor.ts` | **New** | Sub-element editor for cell interaction |
 | `packages/element/src/shape.ts` | Modify | roughjs shape generation for table grid |
 | `packages/element/src/renderElement.ts` | Modify | Canvas rendering: backgrounds, grid lines, text |

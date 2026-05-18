@@ -1144,6 +1144,7 @@ export const ShapesSwitcher = ({
             return (
               <TableButton
                 key={value}
+                value={value}
                 label={label}
                 fillable={fillable}
                 icon={icon}
@@ -1361,7 +1362,7 @@ export const ExitViewModeButton = ({
 );
 
 const TableButton = ({
-  key,
+  value,
   label,
   fillable,
   icon,
@@ -1369,7 +1370,7 @@ const TableButton = ({
   setAppState,
   app,
 }: {
-  key: string;
+  value: string;
   label: string;
   fillable: boolean;
   icon: ReactNode;
@@ -1381,7 +1382,7 @@ const TableButton = ({
   const tableButtonRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div key={key} ref={tableButtonRef} style={{ position: "relative" }}>
+    <div ref={tableButtonRef} style={{ position: "relative" }}>
       <ToolButton
         className={clsx("Shape", { fillable })}
         type="radio"
@@ -1390,10 +1391,10 @@ const TableButton = ({
         name="editor-current-shape"
         title={capitalizeString(label)}
         aria-label={capitalizeString(label)}
-        data-testid={`toolbar-${key}`}
+        data-testid={`toolbar-${value}`}
         onChange={() => {
-          if (app.state.activeTool.type !== key) {
-            trackEvent("toolbar", key, "ui");
+          if (app.state.activeTool.type !== value) {
+            trackEvent("toolbar", value, "ui");
           }
           setIsTableGridPickerOpen(!isTableGridPickerOpen);
         }}

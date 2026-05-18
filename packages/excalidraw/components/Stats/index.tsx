@@ -296,6 +296,8 @@ export const StatsInner = memo(
                       >
                         {appState.croppingElementId
                           ? t("labels.imageCropping")
+                          : singleElement.type === "table"
+                          ? t("toolBar.table")
                           : t(`element.${singleElement.type}`)}
                       </StatsRow>
 

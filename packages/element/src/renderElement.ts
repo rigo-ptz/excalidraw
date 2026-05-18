@@ -11,7 +11,10 @@ import {
 
 import {
   BOUND_TEXT_PADDING,
+  DEFAULT_FONT_FAMILY,
+  DEFAULT_FONT_SIZE,
   DEFAULT_REDUCED_GLOBAL_ALPHA,
+  DEFAULT_TEXT_ALIGN,
   ELEMENT_READY_TO_ERASE_OPACITY,
   FRAME_STYLE,
   DARK_THEME_FILTER,
@@ -19,6 +22,7 @@ import {
   THEME,
   distance,
   getFontString,
+  getLineHeight,
   isRTL,
   getVerticalOffset,
   invariant,
@@ -52,7 +56,12 @@ import {
   getBoundTextMaxHeight,
   getBoundTextMaxWidth,
 } from "./textElement";
-import { getLineHeightInPx } from "./textMeasurements";
+import {
+  getLineHeightInPx,
+  measureText,
+  normalizeText,
+} from "./textMeasurements";
+import { wrapText } from "./textWrapping";
 import {
   isTextElement,
   isLinearElement,
@@ -65,6 +74,7 @@ import {
 } from "./typeChecks";
 import { getContainingFrame } from "./frame";
 import { getCornerRadius } from "./utils";
+import { getTableCellBoundsLocal } from "./table.utils";
 
 import { ShapeCache } from "./shape";
 
@@ -358,6 +368,127 @@ IMAGE_ERROR_PLACEHOLDER_IMG.src = `data:${MIME_TYPES.svg},${encodeURIComponent(
   `<svg viewBox="0 0 668 668" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2"><path d="M464 448H48c-26.51 0-48-21.49-48-48V112c0-26.51 21.49-48 48-48h416c26.51 0 48 21.49 48 48v288c0 26.51-21.49 48-48 48ZM112 120c-30.928 0-56 25.072-56 56s25.072 56 56 56 56-25.072 56-56-25.072-56-56-56ZM64 384h384V272l-87.515-87.515c-4.686-4.686-12.284-4.686-16.971 0L208 320l-55.515-55.515c-4.686-4.686-12.284-4.686-16.971 0L64 336v48Z" style="fill:#888;fill-rule:nonzero" transform="matrix(.81709 0 0 .81709 124.825 145.825)"/><path d="M256 8C119.034 8 8 119.033 8 256c0 136.967 111.034 248 248 248s248-111.034 248-248S392.967 8 256 8Zm130.108 117.892c65.448 65.448 70 165.481 20.677 235.637L150.47 105.216c70.204-49.356 170.226-44.735 235.638 20.676ZM125.892 386.108c-65.448-65.448-70-165.481-20.677-235.637L361.53 406.784c-70.203 49.356-170.226 44.736-235.638-20.676Z" style="fill:#888;fill-rule:nonzero" transform="matrix(.30366 0 0 .30366 506.822 60.065)"/></svg>`,
 )}`;
 
+const TABLE_CELL_PADDING = 8;
+
+const renderTableBackgrounds = (
+  element: Extract<NonDeletedExcalidrawElement, { type: "table" }>,
+  context: CanvasRenderingContext2D,
+  renderConfig: StaticCanvasRenderConfig,
+) => {
+  for (let row = 0; row < element.rows.length; row += 1) {
+    for (let col = 0; col < element.columns.length; col += 1) {
+      const cell = element.cells[row]?.[col];
+      if (!cell || cell.merged) {
+        continue;
+      }
+
+      const backgroundColor = cell.backgroundColor ?? element.backgroundColor;
+      if (!backgroundColor || backgroundColor === "transparent") {
+        continue;
+      }
+
+      const bounds = getTableCellBoundsLocal(element, row, col);
+      if (!bounds) {
+        continue;
+      }
+
+      context.fillStyle =
+        renderConfig.theme === THEME.DARK
+          ? applyDarkModeFilter(backgroundColor)
+          : backgroundColor;
+      context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+    }
+  }
+};
+
+const renderTableText = (
+  element: Extract<NonDeletedExcalidrawElement, { type: "table" }>,
+  context: CanvasRenderingContext2D,
+  renderConfig: StaticCanvasRenderConfig,
+) => {
+  const shouldTemporarilyAttach = !context.canvas.isConnected;
+  if (shouldTemporarilyAttach) {
+    document.body.appendChild(context.canvas);
+  }
+
+  context.save();
+  context.fillStyle =
+    renderConfig.theme === THEME.DARK
+      ? applyDarkModeFilter(element.strokeColor)
+      : element.strokeColor;
+  context.textBaseline = "alphabetic";
+
+  for (let row = 0; row < element.rows.length; row += 1) {
+    for (let col = 0; col < element.columns.length; col += 1) {
+      const cell = element.cells[row]?.[col];
+      if (!cell || cell.merged || cell.content.type !== "text") {
+        continue;
+      }
+
+      const text = normalizeText(cell.content.text);
+      if (!text) {
+        continue;
+      }
+
+      const bounds = getTableCellBoundsLocal(element, row, col);
+      if (!bounds) {
+        continue;
+      }
+
+      const fontFamily = cell.content.fontFamily ?? DEFAULT_FONT_FAMILY;
+      const fontSize = cell.content.fontSize ?? DEFAULT_FONT_SIZE;
+      const textAlign = cell.content.textAlign ?? DEFAULT_TEXT_ALIGN;
+      const lineHeight = getLineHeight(fontFamily);
+      const font = getFontString({ fontFamily, fontSize });
+      const wrappedText = wrapText(
+        text,
+        font,
+        Math.max(0, bounds.width - TABLE_CELL_PADDING * 2),
+      );
+      const lineHeightPx = getLineHeightInPx(fontSize, lineHeight);
+      const textHeight = measureText(wrappedText, font, lineHeight).height;
+      const verticalOffset = getVerticalOffset(
+        fontFamily,
+        fontSize,
+        lineHeightPx,
+      );
+      const lines = wrappedText.split("\n");
+
+      context.canvas.setAttribute("dir", isRTL(wrappedText) ? "rtl" : "ltr");
+      context.font = font;
+      context.textAlign = textAlign as CanvasTextAlign;
+
+      const x =
+        textAlign === "center"
+          ? bounds.x + bounds.width / 2
+          : textAlign === "right"
+          ? bounds.x + bounds.width - TABLE_CELL_PADDING
+          : bounds.x + TABLE_CELL_PADDING;
+      const y =
+        bounds.y +
+        Math.max((bounds.height - textHeight) / 2, 0) +
+        verticalOffset;
+
+      context.save();
+      context.beginPath();
+      context.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+      context.clip();
+
+      for (let index = 0; index < lines.length; index += 1) {
+        context.fillText(lines[index], x, y + index * lineHeightPx);
+      }
+
+      context.restore();
+    }
+  }
+
+  context.restore();
+
+  if (shouldTemporarilyAttach) {
+    context.canvas.remove();
+  }
+};
+
 const drawImagePlaceholder = (
   element: ExcalidrawImageElement,
   context: CanvasRenderingContext2D,
@@ -412,6 +543,20 @@ const drawElementOnCanvas = (
           rc.draw(shape);
         },
       );
+      break;
+    }
+    case "table": {
+      context.save();
+      renderTableBackgrounds(element, context, renderConfig);
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      ShapeCache.generateElementShape(element, renderConfig).forEach(
+        (shape) => {
+          rc.draw(shape);
+        },
+      );
+      renderTableText(element, context, renderConfig);
+      context.restore();
       break;
     }
     case "freedraw": {
@@ -886,6 +1031,7 @@ export const renderElement = (
     case "image":
     case "text":
     case "iframe":
+    case "table":
     case "embeddable": {
       if (renderConfig.isExporting) {
         const [x1, y1, x2, y2] = getElementAbsoluteCoords(element, elementsMap);

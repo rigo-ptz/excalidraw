@@ -117,6 +117,7 @@ export const AllowedExcalidrawActiveTools: Record<
   hand: true,
   laser: false,
   magicframe: false,
+  table: true,
 };
 
 export type RestoredDataState = {
